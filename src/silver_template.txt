@@ -1,0 +1,60 @@
+# COMMAND ----------
+
+#  Base path for Delta tables (Update to your location)
+delta_base_path = "dbfs:/path/to/delta/"
+
+# COMMAND ----------
+
+#  Read input Delta tables (modify table names as needed)
+left_df = spark.read.format("delta").load(delta_base_path + "left_table_name")
+right_df = spark.read.format("delta").load(delta_base_path + "right_table_name")
+
+# COMMAND ----------
+
+#  Perform a join (modify join keys and type as needed)
+joined_df = left_df.join(
+    right_df,
+    on=["join_key1", "join_key2"],  # Replace with actual join keys
+    how="inner"                     # Options: inner, left, right, outer
+)
+
+# COMMAND ----------
+
+#  Select required columns (adjust as needed)
+selected_df = joined_df.select(
+    "id_col1",
+    "id_col2",
+    "attribute1",
+    "attribute2"
+)
+
+# COMMAND ----------
+
+#  Function to rename columns with a prefix (e.g., "silver_"), except ID columns
+def rename_columns(df, id_columns, prefix):
+    renamed = []
+    for col in df.columns:
+        if col not in id_columns:
+            renamed.append(f"{prefix}{col}")
+        else:
+            renamed.append(col)
+    return df.toDF(*renamed)
+
+# Apply renaming
+id_cols = ["id_col1", "id_col2"]  # Customize ID columns
+silver_df = rename_columns(selected_df, id_columns=id_cols, prefix="silver_")
+
+# COMMAND ----------
+
+#  Save output as Delta with schema evolution support
+silver_df.write.format("delta") \
+    .option("mergeSchema", "true") \
+    .mode("overwrite") \
+    .save(delta_base_path + "output_table_name")  # Replace with your target name
+
+print(" Successfully created Silver Delta table: output_table_name")
+
+# COMMAND ----------
+
+#  Optional: Preview saved table
+# spark.read.format("delta").load(delta_base_path + "output_table_name").show()
