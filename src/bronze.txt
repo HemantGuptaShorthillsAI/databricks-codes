@@ -1,0 +1,47 @@
+# COMMAND ----------
+
+#  Define the base path for the CSV files
+csv_base_path = "dbfs:/path/to/csv/"  # <-- Update this to your CSV folder path
+
+#  Define the base path for the Delta tables
+delta_base_path = "dbfs:/path/to/delta/"  # <-- Update this to your Delta output folder
+
+# COMMAND ----------
+
+#  Function to read a CSV file and save it as a Delta table
+def csv_to_delta(csv_file_name: str, delta_table_name: str):
+    """
+    Reads a CSV file from the given CSV base path and writes it as a Delta table to the given Delta base path.
+    """
+    csv_path = csv_base_path + csv_file_name
+    delta_path = delta_base_path + delta_table_name
+
+    #  Read the CSV into a DataFrame
+    df = spark.read.option("header", True).option("inferSchema", True).csv(csv_path)
+
+    #  Write DataFrame as a Delta table
+    df.write.format("delta").mode("overwrite").save(delta_path)
+
+    print(f" Successfully created Delta table: {delta_table_name}")
+
+# COMMAND ----------
+
+# List of CSV files to convert
+csv_files = [
+    "your_file_1.csv",
+    "your_file_2.csv",
+    # Add more file names as needed
+]
+
+# COMMAND ----------
+
+#  Convert each CSV to Delta
+for csv_file in csv_files:
+    delta_table_name = csv_file.replace(".csv", "")
+    csv_to_delta(csv_file, delta_table_name)
+
+# COMMAND ----------
+
+#  Optional: Verify a Delta table
+# df = spark.read.format("delta").load(delta_base_path + "your_file_1")
+# df.show()
